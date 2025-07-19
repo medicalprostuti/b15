@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>বোটানি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "জেনেটিক ম্যাপ তৈরি করা হয়-",
+          options: {
+            a: "মেয়োসিসের বিয়োজন বিভাজনের শতকরা হার থেকে",
+            b: "ক্রসিংওভারের শতকরা হার থেকে",
+            c: "মাইটোটিক ইনডেক্স থেকে",
+            d: "কোষে ক্রোমোজোমের অবস্থান থেকে",
+          },
+          correct: "b",
+          explanation:
+            "<p>জেনেটিক ম্যাপ বা জিন মানচিত্র তৈরি করা হয় ক্রোমোজোমের উপর জিনগুলোর আপেক্ষিক অবস্থান এবং তাদের মধ্যেকার দূরত্ব নির্ণয়ের মাধ্যমে। এই দূরত্ব ক্রসিংওভারের শতকরা হারের উপর ভিত্তি করে হিসাব করা হয়। দুটি জিনের মধ্যে ক্রসিংওভারের হার যত বেশি, জিন দুটি তত দূরে অবস্থিত বলে ধরে নেওয়া হয়।</p>",
+        },
+        {
+          id: 2,
+          question: "স্পোরোফাইটিক জীবে/উদ্ভিদের মায়োসিস ঘটে কোথায়?",
+          options: {
+            a: "জননকোষে",
+            b: "দেহকোষে",
+            c: "জনন মাতৃকোষে",
+            d: "পরাগরেণুতে",
+          },
+          correct: "c",
+          explanation:
+            "<p>স্পোরোফাইটিক উদ্ভিদে মায়োসিস জনন মাতৃকোষে (যেমন পরাগ মাতৃকোষ ও ডিম্বাণু মাতৃকোষ) ঘটে এবং এর ফলে হ্যাপ্লয়েড স্পোর (রেণু) তৈরি হয়। এই স্পোর অঙ্কুরিত হয়ে গ্যামেটোফাইট তৈরি করে।</p>",
+        },
+        {
+          id: 3,
+          question: "মিয়োসিস কোষ বিভাজনের কোন উপপর্যায়ে কায়াজমা তৈরি হয়?",
+          options: {
+            a: "লেপ্টোটিন",
+            b: "প্যাকাইটিন",
+            c: "ডায়াকাইনেসিস",
+            d: "ডিপ্লোটিন",
+          },
+          correct: "b",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর প্যাকাইটিন উপপর্যায়ে হোমোলোগাস ক্রোমোজোমগুলোর নন-সিস্টার ক্রোমাটিডের মধ্যে ক্রসিংওভার ঘটে এবং কায়াজমা (X-আকৃতির গঠন) সৃষ্টি হয়, যা ক্রসিংওভারের স্থান নির্দেশ করে।</p>",
+        },
+        {
+          id: 4,
+          question:
+            "প্রোফেজ-১ এর কোন উপপর্যায়ে নিউক্লিয়ার মেমব্রেনের অবলুপ্তি ঘটে?",
+          options: {
+            a: "জাইগোটিন",
+            b: "প্যাকাইটিন",
+            c: "ডিপ্লোটিন",
+            d: "ডায়াকাইনেসিস",
+          },
+          correct: "d",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর ডায়াকাইনেসিস উপপর্যায়ে নিউক্লিয়ার মেমব্রেন এবং নিউক্লিওলাস সম্পূর্ণরূপে বিলুপ্ত হতে শুরু করে এবং স্পিন্ডল ফাইবার গঠিত হতে থাকে।</p>",
+        },
+        {
+          id: 5,
+          question: "বাইভ্যালেন্ট সৃষ্টি হয় কোন উপদশায়?",
+          options: {
+            a: "লেপ্টোটিন",
+            b: "জাইগোটিন",
+            c: "প্যাকাইটিন",
+            d: "ডিপ্লোটিন",
+          },
+          correct: "b",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর জাইগোটিন উপদশায় হোমোলোগাস ক্রোমোজোমগুলো জোড় বাঁধতে শুরু করে, এই জোড়বদ্ধ ক্রোমোজোমকে বাইভ্যালেন্ট বা টেট্রাড বলা হয়। এই প্রক্রিয়াকে সিন্যাপসিস বলে।</p>",
+        },
+        {
+          id: 6,
+          question: "মিয়োসিসের কোন দশায় সিন্যাপসিস ঘটে?",
+          options: {
+            a: "লেপ্টোটিন",
+            b: "জাইগোটিন",
+            c: "প্যাকাইটিন",
+            d: "ডিপ্লোটিন",
+          },
+          correct: "b",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর জাইগোটিন উপদশায় হোমোলোগাস ক্রোমোজোমগুলো জোড় বাঁধে, এই জোড় বাঁধার প্রক্রিয়াকে সিন্যাপসিস বলে।</p>",
+        },
+        {
+          id: 7,
+          question:
+            "কায়াজমাটার প্রান্তবর্তন ঘটে মায়োসিস কোষ বিভাজনের কোন দশায়?",
+          options: {
+            a: "লেপ্টোটিন",
+            b: "জাইগোটিন",
+            c: "প্যাকাইটিন",
+            d: "ডায়াকাইনেসিস",
+          },
+          correct: "d",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর ডায়াকাইনেসিস উপপর্যায়ে কায়াজমাগুলো ক্রোমোজোমের প্রান্তের দিকে সরতে শুরু করে, এই প্রক্রিয়াকে প্রান্তবর্তন বা টার্মিনালাইজেশন বলে।</p>",
+        },
+        {
+          id: 8,
+          question: "কোন জীব হ্যাপ্লয়েড দেহ গঠন করে?",
+          options: {
+            a: "ফার্ন",
+            b: "শৈবাল",
+            c: "জিমনোস্পার্ম",
+            d: "অ্যানজিওস্পার্ম",
+          },
+          correct: "b",
+          explanation:
+            "<p>অনেক শৈবাল (যেমন স্পাইরোগাইরা, ক্ল্যামিডোমনাস) তাদের জীবনচক্রে প্রধানত হ্যাপ্লয়েড দেহ গঠন করে। ডিপ্লয়েড জাইগোট মায়োসিসের মাধ্যমে হ্যাপ্লয়েড স্পোর তৈরি করে যা হ্যাপ্লয়েড থ্যালাস গঠন করে। ফার্ন, জিমনোস্পার্ম ও অ্যানজিওস্পার্ম প্রধানত ডিপ্লয়েড স্পোরোফাইটিক দেহ গঠন করে।</p>",
+        },
+        {
+          id: 9,
+          question: "হ্যাপ্লয়েড জীবের কোথায় মায়োসিস সংঘটিত হয়?",
+          options: {
+            a: "জাইগোট",
+            b: "জনন মাতৃকোষ",
+            c: "দেহকোষ",
+            d: "জননকোষ",
+          },
+          correct: "a",
+          explanation:
+            "<p>হ্যাপ্লয়েড জীবের (যাদের দেহ হ্যাপ্লয়েড) জীবনচক্রে নিষিক্তকরণের ফলে ডিপ্লয়েড জাইগোট তৈরি হয়। এই জাইগোট মায়োসিসের মাধ্যমে বিভাজিত হয়ে হ্যাপ্লয়েড স্পোর তৈরি করে, যা নতুন হ্যাপ্লয়েড জীব সৃষ্টি করে।</p>",
+        },
+        {
+          id: 10,
+          question: "কোন কোষ বিভাজনকে বিয়োজন বিভাজন বলে?",
+          options: {
+            a: "মাইটোসিস",
+            b: "অ্যামাইটোসিস",
+            c: "সাইটোকাইনেসিস",
+            d: "মায়োসিস",
+          },
+          correct: "d",
+          explanation:
+            "<p>মায়োসিস কোষ বিভাজনকে হ্রাস বিভাজন বা বিয়োজন বিভাজন বলা হয়, কারণ এই প্রক্রিয়ায় একটি ডিপ্লয়েড মাতৃকোষ থেকে চারটি হ্যাপ্লয়েড অপত্য কোষ তৈরি হয়, যেখানে ক্রোমোজোম সংখ্যা মাতৃকোষের অর্ধেক হয়ে যায়।</p>",
+        },
+        {
+          id: 11,
+          question: "কোন ধাপে দানাদার ক্রোমোমিয়ার দেখা যায়?",
+          options: {
+            a: "ডিপ্লোটিন",
+            b: "লেপ্টোটিন",
+            c: "ডায়াকাইনেসিস",
+            d: "প্যাকাইটিন",
+          },
+          correct: "b",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর লেপ্টোটিন উপপর্যায়ে ক্রোমোসোমগুলো লম্বা এবং সরু সুতার মতো দেখায় এবং এদের উপর পুঁতির মতো দানাদার গঠন দেখা যায়, যা ক্রোমোমিয়ার নামে পরিচিত।</p>",
+        },
+        {
+          id: 12,
+          question: "নিচের কোন পর্যায়ে ক্রোমোসোমের টেট্রাড লক্ষ করা যায়?",
+          options: {
+            a: "প্যাকাইটিনে",
+            b: "জাইগোটিনে",
+            c: "লেপ্টোটিনে",
+            d: "ডায়াকাইনেসিসে",
+          },
+          correct: "a",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর প্যাকাইটিন উপপর্যায়ে হোমোলোগাস ক্রোমোজোমগুলো সম্পূর্ণরূপে জোড়বদ্ধ হয়ে চারটি ক্রোমাটিড বিশিষ্ট গঠন তৈরি করে, যাকে টেট্রাড বা বাইভ্যালেন্ট বলা হয়।</p>",
+        },
+        {
+          id: 13,
+          question: "প্রতিটি জোড় বাঁধা ক্রোমোসোম জোড়াকে কী বলে?",
+          options: {
+            a: "সিন্যাপসিস",
+            b: "ক্রসিংওভার",
+            c: "বাইভ্যালেন্ট",
+            d: "কায়াজমা",
+          },
+          correct: "c",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর জাইগোটিন উপপর্যায়ে হোমোলোগাস ক্রোমোজোমগুলো জোড় বাঁধে এবং এই জোড়বদ্ধ প্রতিটি ক্রোমোজোম জোড়াকে বাইভ্যালেন্ট বলা হয়। সিন্যাপসিস হলো জোড় বাঁধার প্রক্রিয়া, ক্রসিংওভার হলো ক্রোমাটিডের অংশের বিনিময় এবং কায়াজমা হলো ক্রসিংওভারের ফলে সৃষ্ট X-আকৃতির গঠন।</p>",
+        },
+        {
+          id: 14,
+          question: "একই ক্রোমোসোম থেকে প্রাপ্ত দুটি ক্রোমাটিডকে কী বলে?",
+          options: {
+            a: "সিস্টার",
+            b: "নন-সিস্টার",
+            c: "ক্রোমোমিয়ার",
+            d: "টেট্রাড",
+          },
+          correct: "a",
+          explanation:
+            "<p>একটি ক্রোমোসোমের প্রতিলিপির ফলে সৃষ্ট দুটি অভিন্ন ক্রোমাটিডকে সিস্টার ক্রোমাটিড বলা হয়। নন-সিস্টার ক্রোমাটিড হলো দুটি হোমোলোগাস ক্রোমোসোমের ক্রোমাটিড। ক্রোমোমিয়ার হলো ক্রোমোসোমের উপর দানাদার গঠন এবং টেট্রাড হলো চারটি ক্রোমাটিডের সমন্বয়ে গঠিত বাইভ্যালেন্ট।</p>",
+        },
+        {
+          id: 15,
+          question:
+            "প্রতিটি ক্রোমোসোমের সেন্ট্রোমিয়ার অগ্রগামী ও বাহুগুলো পশ্চাৎবর্তী থাকে কোন ধাপে?",
+          options: {
+            a: "প্রোফেজ-২",
+            b: "মেটাফেজ-২",
+            c: "অ্যানাফেজ-২",
+            d: "টেলোফেজ-২",
+          },
+          correct: "c",
+          explanation:
+            "<p>মিয়োসিস-২ অনেকটা মাইটোসিসের মতোই। অ্যানাফেজ-২ দশায় প্রতিটি ক্রোমোসোমের সেন্ট্রোমিয়ার বিভক্ত হয় এবং অপত্য ক্রোমাটিডগুলো (এখন অপত্য ক্রোমোজোম) মেরুর দিকে গমন করে। এই সময় সেন্ট্রোমিয়ার অগ্রগামী এবং ক্রোমোসোমের বাহুগুলো পশ্চাৎবর্তী থাকে।</p>",
+        },
+        {
+          id: 16,
+          question:
+            "হোমোলোগাস ক্রোমোসোমগুলো বাইভ্যালেন্টের মাঝে কত ডিগ্রি কোণ করে থাকে?",
+          options: {
+            a: "৩০",
+            b: "৫০",
+            c: "৭০",
+            d: "৯০",
+          },
+          correct: "d",
+          explanation:
+            "<p>মেটাফেজ-১ দশায় বাইভ্যালেন্টগুলো বিষুবীয় তলে সারিবদ্ধভাবে সজ্জিত হয় এবং প্রতিটি হোমোলোগাস ক্রোমোসোম জোড় স্পিন্ডল ফাইবারের বিপরীত মেরুর দিকে মুখ করে থাকে, ফলে তারা একে অপরের সাথে প্রায় ৯০ ডিগ্রি কোণ তৈরি করে।</p>",
+        },
+        {
+          id: 17,
+          question: "মায়োসিস কোষ বিভাজন প্রথম কে প্রত্যক্ষ করেন?",
+          options: {
+            a: "ওয়াল্টার ফ্লেমিং",
+            b: "বোভেরি",
+            c: "শাইখার",
+            d: "স্টার্চবুর্গার",
+          },
+          correct: "d",
+          explanation:
+            "<p>১৮৮৮ সালে এডুয়ার্ড স্ট্রাসবার্গার (Eduard Strasburger) সর্বপ্রথম উদ্ভিদের জননকোষে মায়োসিস কোষ বিভাজন প্রত্যক্ষ করেন। ওয়াল্টার ফ্লেমিং মাইটোসিস আবিষ্কার করেন, বোভেরি ক্রোমোজোমের ভূমিকা নিয়ে কাজ করেন এবং শাইখারও কোষবিদ্যা নিয়ে গবেষণা করেন।</p>",
+        },
+        {
+          id: 18,
+          question:
+            "কোনটি দ্বারা মেন্ডেলবাদ ও আপাত ব্যতিক্রমগুলো ব্যাখ্যা করা যায়?",
+          options: {
+            a: "অ্যামাইটোসিস",
+            b: "ক্রসিংওভার",
+            c: "মাইটোসিস",
+            d: "মায়োসিস",
+          },
+          correct: "b",
+          explanation:
+            "<p>ক্রসিংওভার হলো মিয়োসিসের প্রোফেজ-১ এর প্যাকাইটিন উপপর্যায়ে হোমোলোগাস ক্রোমোজোমের নন-সিস্টার ক্রোমাটিডের মধ্যে জিনের আদান-প্রদান। এর ফলে জিনের নতুন সমন্বয় ঘটে এবং মেন্ডেলের স্বাধীন সঞ্চলনের সূত্রের কিছু ব্যতিক্রম দেখা যায়, যা ক্রসিংওভারের মাধ্যমে ব্যাখ্যা করা যায়।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "জীবের বংশ পরম্পরায় ক্রোমোসোম সংখ্যা নিয়ন্ত্রণে দায়ী কোনটি?",
+          options: {
+            a: "DNA অনুলিপন",
+            b: "জাইগোটিন",
+            c: "মাইটোসিস",
+            d: "মায়োসিস",
+          },
+          correct: "d",
+          explanation:
+            "<p>মায়োসিস হলো জনন কোষ (গ্যামেট) তৈরির প্রক্রিয়া, যেখানে ক্রোমোজোম সংখ্যা মাতৃকোষের অর্ধেক হয়ে যায়। নিষিক্তকরণের সময় দুটি হ্যাপ্লয়েড গ্যামেটের মিলনের ফলে ডিপ্লয়েড জাইগোট গঠিত হয়, যা বংশ পরম্পরায় প্রজাতির ক্রোমোজোম সংখ্যা ধ্রুব রাখতে সাহায্য করে।</p>",
+        },
+        {
+          id: 20,
+          question: "ক্রসিংওভার ঘটে কোন উপপর্যায়ে?",
+          options: {
+            a: "লেপ্টোটিন",
+            b: "জাইগোটিন",
+            c: "প্যাকাইটিন",
+            d: "ডায়াকাইনেসিস",
+          },
+          correct: "c",
+          explanation:
+            "<p>ক্রসিংওভার মিয়োসিস-১ এর প্রোফেজ-১ এর প্যাকাইটিন উপপর্যায়ে হোমোলোগাস ক্রোমোজোমের নন-সিস্টার ক্রোমাটিডের মধ্যে জিনগত উপাদানের বিনিময়।</p>",
+        },
+        {
+          id: 21,
+          question: "মায়োসিস প্রোফেজ-১ এর সঠিক ক্রম পর্যায় কোনটি?",
+          options: {
+            a: "জাইগোটিন → ডিপ্লোটিন → প্যাকাইটিন → ডায়াকাইনেসিস",
+            b: "লেপ্টোটিন → প্যাকাইটিন → ডিপ্লোটিন → জাইগোটিন",
+            c: "জাইগোটিন → প্যাকাইটিন → ডিপ্লোটিন → লেপ্টোটিন",
+            d: "লেপ্টোটিন → জাইগোটিন → প্যাকাইটিন → ডিপ্লোটিন",
+          },
+          correct: "d",
+          explanation:
+            "<p>মায়োসিস-১ এর প্রোফেজ-১ কে পাঁচটি উপপর্যায়ে ভাগ করা যায় এবং তাদের সঠিক ক্রম হলো: লেপ্টোটিন, জাইগোটিন, প্যাকাইটিন, ডিপ্লোটিন এবং ডায়াকাইনেসিস।</p>",
+        },
+        {
+          id: 22,
+          question: "প্রান্তীয়করণ কোন উপপর্যায়ে ঘটে?",
+          options: {
+            a: "জাইগোটিন",
+            b: "প্যাকাইটিন",
+            c: "ডিপ্লোটিন",
+            d: "ডায়াকাইনেসিস",
+          },
+          correct: "c",
+          explanation:
+            "<p>প্রান্তীয়করণ বা টার্মিনালাইজেশন হলো মিয়োসিস-১ এর প্রোফেজ-১ এর ডিপ্লোটিন উপপর্যায়ে কায়াজমাগুলো ধীরে ধীরে ক্রোমোজোমের প্রান্তের দিকে সরতে শুরু করার প্রক্রিয়া। ডায়াকাইনেসিসে এটি আরও স্পষ্ট হয়।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "মায়োসিসের প্রোফেজ-১ এর প্যাকাইটিন উপদশায় দৃশ্যমান 'X' আকৃতির অংশকে কী বলে?",
+          options: {
+            a: "ক্রসিংওভার",
+            b: "সিন্যাপসিস",
+            c: "টেট্রাড",
+            d: "কায়াজমা",
+          },
+          correct: "d",
+          explanation:
+            "<p>মায়োসিসের প্রোফেজ-১ এর প্যাকাইটিন উপপর্যায়ে হোমোলোগাস ক্রোমোজোমের নন-সিস্টার ক্রোমাটিডের মধ্যে ক্রসিংওভারের ফলে যে X-আকৃতির গঠন দেখা যায়, তাকে কায়াজমা বলে। এটি ক্রসিংওভারের স্থান নির্দেশ করে।</p>",
+        },
+        {
+          id: 24,
+          question: "ক্রোমোসোম সংখ্যা মাতৃকোষের অর্ধেক হয় কোন ধাপে?",
+          options: {
+            a: "প্রোফেজ-১",
+            b: "মেটাফেজ-১",
+            c: "অ্যানাফেজ-১",
+            d: "টেলোফেজ-১",
+          },
+          correct: "c",
+          explanation:
+            "<p>মায়োসিস-১ এর অ্যানাফেজ-১ দশায় হোমোলোগাস ক্রোমোজোমগুলো (সিস্টার ক্রোমাটিডসহ) পরস্পর থেকে বিচ্ছিন্ন হয়ে কোষের দুই বিপরীত মেরুর দিকে গমন করে। এর ফলে প্রতিটি অপত্য কোষে ক্রোমোজোম সংখ্যা মাতৃকোষের অর্ধেক হয়ে যায়।</p>",
+        },
+        {
+          id: 25,
+          question: "দুটি হোমোলোগাস ক্রোমোসোমের মধ্যে জোড় সৃষ্টি হওয়াকে বলে-",
+          options: {
+            a: "সিন্যাপসিস",
+            b: "মেটাফেজ-২",
+            c: "কায়াজমা",
+            d: "প্রান্তীয়করণ",
+          },
+          correct: "a",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর জাইগোটিন উপপর্যায়ে দুটি হোমোলোগাস ক্রোমোজোম পাশাপাশি এসে জোড় বাঁধে, এই প্রক্রিয়াকে সিন্যাপসিস বলে।</p>",
+        },
+        {
+          id: 26,
+          question:
+            "মায়োসিস কোষবিভাজন প্রক্রিয়ায় নিউক্লিয়াসের প্রথম ও দ্বিতীয় বিভাজনের মধ্যবর্তী সময়কে বলে-",
+          options: {
+            a: "ক্যারিওকাইনেসিস",
+            b: "সাইটোকাইনেসিস",
+            c: "মেটাকাইনেসিস",
+            d: "ইন্টারকাইনেসিস",
+          },
+          correct: "d",
+          explanation:
+            "<p>মায়োসিস কোষ বিভাজনে নিউক্লিয়াসের প্রথম বিভাজন (মায়োসিস-১) এবং দ্বিতীয় বিভাজন (মায়োসিস-২)-এর মধ্যবর্তী স্বল্প বিশ্রামকালকে ইন্টারকাইনেসিস বলে। এই সময়ে DNA-এর প্রতিলিপি ঘটে না।</p>",
+        },
+        {
+          id: 27,
+          question: "ক্রোমোসোমের অংশের বিনিময়কে কী বলে?",
+          options: {
+            a: "ক্রসিংওভার",
+            b: "বাইভ্যালেন্ট",
+            c: "সিস্টার ক্রোমাটিড",
+            d: "এন্ডোনিউক্লিয়াস",
+          },
+          correct: "a",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর প্যাকাইটিন উপপর্যায়ে হোমোলোগাস ক্রোমোজোমের নন-সিস্টার ক্রোমাটিডের মধ্যে জিনগত উপাদানের বিনিময়কে ক্রসিংওভার বলে।</p>",
+        },
+        {
+          id: 28,
+          question:
+            "কোনটির কারণে নন-সিস্টার ক্রোমাটিড দুটি এক বা একাধিক স্থানে এবং একই তলে আড়াআড়িভাবে ভেঙ্গে যায়?",
+          options: {
+            a: "এন্ডোনিউক্লিয়েজ",
+            b: "লাইপেজ",
+            c: "লাইগেজ",
+            d: "এন্ডোনিউক্লিয়াস",
+          },
+          correct: "a",
+          explanation:
+            "<p>ক্রসিংওভারের সময় নন-সিস্টার ক্রোমাটিড দুটি এন্ডোনিউক্লিয়েজ নামক উৎসেচকের কারণে এক বা একাধিক স্থানে ভেঙ্গে যায় এবং পরবর্তীতে লাইগেজ উৎসেচকের মাধ্যমে পুনরায় জোড়া লাগে, যার ফলে জিনের বিনিময় ঘটে।</p>",
+        },
+        {
+          id: 29,
+          question: "কোনটিতে মিয়োসিস ঘটে?",
+          options: {
+            a: "জননকোষে",
+            b: "দেহকোষে",
+            c: "পরাগরেণুতে",
+            d: "জনন মাতৃকোষে",
+          },
+          correct: "d",
+          explanation:
+            "<p>মিয়োসিস সাধারণত জনন মাতৃকোষে (যেমন শুক্রাণু মাতৃকোষ, ডিম্বাণু মাতৃকোষ, পরাগ মাতৃকোষ) ঘটে এবং এর ফলে হ্যাপ্লয়েড জননকোষ (গ্যামেট) বা রেণু তৈরি হয়।</p>",
+        },
+        {
+          id: 30,
+          question: "কোনটির জাইগোটে মায়োসিস ঘটে?",
+          options: {
+            a: "Ulothrix",
+            b: "Pteris",
+            c: "Oryza",
+            d: "Hibiscus",
+          },
+          correct: "a",
+          explanation:
+            "<p>Ulothrix হলো একটি হ্যাপ্লয়েড শৈবাল। এদের জীবনচক্রে নিষিক্তকরণের ফলে ডিপ্লয়েড জাইগোট তৈরি হয় এবং এই জাইগোট মায়োসিসের মাধ্যমে বিভাজিত হয়ে হ্যাপ্লয়েড স্পোর তৈরি করে, যা নতুন হ্যাপ্লয়েড থ্যালাস গঠন করে।</p>",
+        },
+        {
+          id: 31,
+          question: "কোন উপপর্যায়ে হোমোলোগাস ক্রোমোসোম জোড় বাঁধে?",
+          options: {
+            a: "লেপ্টোটিন",
+            b: "জাইগোটিন",
+            c: "প্যাকাইটিন",
+            d: "ডিপ্লোটিন",
+          },
+          correct: "b",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর জাইগোটিন উপপর্যায়ে হোমোলোগাস ক্রোমোজোমগুলো জোড় বাঁধতে শুরু করে, এই প্রক্রিয়াকে সিন্যাপসিস বলে।</p>",
+        },
+        {
+          id: 32,
+          question: "যে সকল ডিপ্লয়েড কোষে মিয়োসিস ঘটে তাকে বলে-",
+          options: {
+            a: "উওসাইট",
+            b: "ফ্যাগোসাইট",
+            c: "পিনোসাইট",
+            d: "মিয়োসাইট",
+          },
+          correct: "d",
+          explanation:
+            "<p>যে সকল ডিপ্লয়েড কোষে মিয়োসিস ঘটে এবং জননকোষ বা রেণু উৎপন্ন হয়, তাদেরকে মিয়োসাইট বলে। উওসাইট ডিম্বাণু তৈরির প্রক্রিয়ার একটি কোষ, ফ্যাগোসাইট জীবাণু ভক্ষণকারী কোষ এবং পিনোসাইট তরল পদার্থ গ্রহণকারী কোষ।</p>",
+        },
+        {
+          id: 33,
+          question: "নিচের কোনটিতে মিয়োসিস ভূমিকা রাখে?",
+          options: {
+            a: "দেহ গঠনে",
+            b: "জনুঃক্রমে",
+            c: "ক্ষয়পূরণে",
+            d: "অঙ্গজ জননে",
+          },
+          correct: "b",
+          explanation:
+            "<p>জনুঃক্রম (alternation of generations) হলো উদ্ভিদের জীবনচক্রে হ্যাপ্লয়েড গ্যামেটোফাইট এবং ডিপ্লয়েড স্পোরোফাইটের পর্যায়ক্রমিক আবর্তন। মিয়োসিস স্পোরোফাইট থেকে হ্যাপ্লয়েড স্পোর তৈরি করে যা গ্যামেটোফাইট উৎপন্ন করে।</p>",
+        },
+        {
+          id: 34,
+          question:
+            "মিয়োসিস কোষ বিভাজনের কোন ধাপে ক্রোমোসোমের ক্রোমাটিড সম্পূর্ণ পৃথক হয়ে যায়?",
+          options: {
+            a: "মেটাফেজ-১",
+            b: "মেটাফেজ-২",
+            c: "অ্যানাফেজ-১",
+            d: "অ্যানাফেজ-২",
+          },
+          correct: "d",
+          explanation:
+            "<p>মিয়োসিস-২ অনেকটা মাইটোসিসের মতোই। অ্যানাফেজ-২ দশায় প্রতিটি ক্রোমোসোমের সেন্ট্রোমিয়ার বিভক্ত হয় এবং সিস্টার ক্রোমাটিডগুলো সম্পূর্ণভাবে পৃথক হয়ে অপত্য ক্রোমোজোম হিসেবে মেরুর দিকে গমন করে।</p>",
+        },
+        {
+          id: 35,
+          question: "নিচের কোন ধরনের কোষে মিয়োসিস কোষবিভাজন সংঘটিত হয়?",
+          options: {
+            a: "পরাগরেণুতে",
+            b: "জননকোষে",
+            c: "দৈহিক কোষে",
+            d: "পরাগ মাতৃকোষে",
+          },
+          correct: "d",
+          explanation:
+            "<p>মিয়োসিস কোষ বিভাজন জনন মাতৃকোষে (যেমন পরাগ মাতৃকোষ, ডিম্বাণু মাতৃকোষ) ঘটে এবং এর ফলে হ্যাপ্লয়েড জননকোষ বা রেণু তৈরি হয়। পরাগরেণু ও জননকোষ হলো মিয়োসিসের উৎপাদ এবং দৈহিক কোষে মাইটোসিস ঘটে।</p>",
+        },
+        {
+          id: 36,
+          question:
+            "মিয়োসিস কোষ বিভাজনে X আকৃতির গঠন দেখা যায় নিম্নের কোনটিতে?",
+          options: {
+            a: "লেপ্টোটিন",
+            b: "জাইগোটিন",
+            c: "প্যাকাইটিন",
+            d: "ডায়াকাইনেসিস",
+          },
+          correct: "d",
+          explanation:
+            "<p>মিয়োসিস-১ এর প্রোফেজ-১ এর ডিপ্লোটিন এবং ডায়াকাইনেসিস উপপর্যায়ে কায়াজমা (ক্রসিংওভারের ফলে সৃষ্ট X-আকৃতির গঠন) সুস্পষ্টভাবে দেখা যায়। প্যাকাইটিনে ক্রসিংওভার ঘটে তবে কায়াজমা ততটা স্পষ্ট হয় না, এবং লেপ্টোটিন ও জাইগোটিনে সিন্যাপসিস শুরু হয়।</p>",
+        },
+        {
+          id: 37,
+          question: "নিচের কোনটির মিলন ক্যারিওগামী?",
+          options: {
+            a: "সাইটোপ্লাজম",
+            b: "নিউক্লিয়াস",
+            c: "গ্যামিটের মিলন",
+            d: "স্পোরের মিলন",
+          },
+          correct: "b",
+          explanation:
+            "<p>ক্যারিওগামী হলো যৌন জননের একটি পর্যায় যেখানে দুটি কোষের নিউক্লিয়াসের মিলন ঘটে। সাইটোপ্লাজমের মিলনকে প্লাজমোগামী বলে। গ্যামেটের মিলন একটি ব্যাপক প্রক্রিয়া যার মধ্যে প্লাজমোগামী ও ক্যারিওগামী উভয়ই অন্তর্ভুক্ত থাকতে পারে। স্পোরের মিলন সাধারণত অযৌন জননের সাথে সম্পর্কিত।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                  <label class="option" data-option="${option}">
+                    <div class="circle">${option}</div>
+                    <span class="option-text">${question.options[option]}</span>
+                  </label>
+                `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                     <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                     <div class="explanation-content">
+                       <div class="explanation-label">ব্যাখ্যা:</div>
+                       ${question.explanation}
+                     </div>
+                   </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                <p class="question-label">${index + 1}. ${question.question}</p>
+                <div class="options">
+                  ${optionsHTML}
+                </div>
+                ${explanationHTML}
+              `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
